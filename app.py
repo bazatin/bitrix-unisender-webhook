@@ -1,18 +1,17 @@
 from flask import Flask, request
+import os
 import requests
 
 app = Flask(__name__)
 
-@app.route("/", methods=["POST"])
-def receive_webhook():
-    data = request.json
-    try:
-        email = data["contact"]["email"][0]["value"]
-    except (KeyError, IndexError):
-        return "Ошибка: неверная структура JSON", 400
+UNISENDER_API_KEY = os.getenv("UNISENDER_API_KEY")
+LIST_ID = os.getenv("LIST_ID")
 
-    UNISENDER_API_KEY = os.getenv("UNISENDER_API_KEY")
-    LIST_ID = os.getenv("LIST_ID")
+@app.route("/", methods=["GET", "POST"])
+def receive_webhook():
+    email = request.args.get("email")  # берем из URL-параметров
+    if not email:
+        return "Ошибка: email не передан", 400
 
     payload = {
         "api_key": UNISENDER_API_KEY,
@@ -29,7 +28,7 @@ def receive_webhook():
     if response.status_code == 200 and response.json().get("result"):
         return "OK", 200
     else:
-        return f"Ошибка Unisender: {response.text}", 500
+        return f"Ошибка UniSender: {response.text}", 500
 
 if __name__ == "__main__":
     app.run()
